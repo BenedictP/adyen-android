@@ -188,15 +188,28 @@ public class UnencryptedCard {
          */
         @NonNull
         public UnencryptedCard build() throws NullPointerException, IllegalStateException {
-            require(mNumber == null || mNumber.matches("[0-9]{8,19}"),
+            return build(true);
+        }
+
+        /**
+         * Builds the given {@link UnencryptedCard} object and optionally validates it.
+         *
+         * @param validateFields Indicates whether teh card fields should be validated.
+         * @return The valid {@link UnencryptedCard} object.
+         * @throws NullPointerException  If any mandatory field is null.
+         * @throws IllegalStateException If any field is in an illegal state.
+         */
+        @NonNull
+        public UnencryptedCard build(Boolean validateFields) throws NullPointerException, IllegalStateException {
+            require(mNumber == null || !validateFields || mNumber.matches("[0-9]{8,19}"),
                     "number must be null or have 8 to 19 digits (inclusive).");
-            require(mCardHolderName == null || mCardHolderName.length() > 0,
+            require(mCardHolderName == null || !validateFields || mCardHolderName.length() > 0,
                     "cardHolderName must be null or not empty.");
-            require(mCvc == null || mCvc.matches("[0-9]{3,4}"),
+            require(mCvc == null || !validateFields || mCvc.matches("[0-9]{3,4}"),
                     "cvc must be null or have 3 to 4 digits.");
-            require(mExpiryMonth == null || mExpiryMonth.matches("0?[1-9]|1[0-2]"),
+            require(mExpiryMonth == null || !validateFields || mExpiryMonth.matches("0?[1-9]|1[0-2]"),
                     "expiryMonth must be null or between 1 and 12.");
-            require(mExpiryYear == null || mExpiryYear.matches("20\\d{2}"),
+            require(mExpiryYear == null || !validateFields || mExpiryYear.matches("20\\d{2}"),
                     "expiryYear must be in the second millennium and first century.");
 
             return new UnencryptedCard(mNumber, mExpiryMonth, mExpiryYear, mCvc, mCardHolderName, mGenerationTime);
