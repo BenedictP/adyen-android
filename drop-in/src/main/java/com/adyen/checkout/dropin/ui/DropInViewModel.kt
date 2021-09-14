@@ -27,12 +27,18 @@ class DropInViewModel(
     val preselectedStoredPayment = paymentMethodsApiResponse.storedPaymentMethods?.firstOrNull {
         it.isEcommerce && PaymentMethodTypes.SUPPORTED_PAYMENT_METHODS.contains(it.type)
     } ?: StoredPaymentMethod()
+    val indexedPaymentMethods = buildIndexedPaymentMethods()
+
+    private fun buildIndexedPaymentMethods(): Map<Int, PaymentMethod> {
+        val paymentMethods = paymentMethodsApiResponse.paymentMethods.orEmpty()
+        return paymentMethods.associateBy { paymentMethods.indexOf(it) }
+    }
 
     fun getStoredPaymentMethod(id: String): StoredPaymentMethod {
         return paymentMethodsApiResponse.storedPaymentMethods?.firstOrNull { it.id == id } ?: StoredPaymentMethod()
     }
 
-    fun getPaymentMethod(type: String): PaymentMethod {
-        return paymentMethodsApiResponse.paymentMethods?.firstOrNull { it.type == type } ?: PaymentMethod()
+    fun getPaymentMethod(index: Int): PaymentMethod {
+        return indexedPaymentMethods[index] ?: PaymentMethod()
     }
 }

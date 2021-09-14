@@ -26,7 +26,7 @@ import com.adyen.checkout.dropin.ui.stored.makeStoredModel
 
 class PaymentMethodsListViewModel(
     application: Application,
-    paymentMethods: List<PaymentMethod>,
+    paymentMethods: Map<Int, PaymentMethod>,
     storedPaymentMethods: List<StoredPaymentMethod>,
     val dropInConfiguration: DropInConfiguration
 ) : AndroidViewModel(application), ComponentAvailableCallback<Configuration> {
@@ -66,7 +66,7 @@ class PaymentMethodsListViewModel(
             storedPaymentMethod.isEcommerce
     }
 
-    private fun setupPaymentMethods(paymentMethods: List<PaymentMethod>) {
+    private fun setupPaymentMethods(paymentMethods: Map<Int, PaymentMethod>) {
         // We can't remove availability callbacks so just for safety let's crash in case of a concurrency issue.
         if (availabilityChecksum != 0) {
             throw CheckoutException("Concurrency error. Cannot update Payment methods list because availability is still being checked.")
@@ -78,7 +78,8 @@ class PaymentMethodsListViewModel(
         availabilityChecksum = paymentMethods.size
         paymentMethodsList.clear()
 
-        for (paymentMethod in paymentMethods) {
+        paymentMethods.keys.sorted().forEach { index ->
+            val paymentMethod = paymentMethods[index] ?: return@forEach
             val type = paymentMethod.type
             when {
                 type == null -> {
@@ -88,7 +89,7 @@ class PaymentMethodsListViewModel(
                     Logger.v(TAG, "Supported payment method: $type")
                     // We assume payment method is available and remove it later when the callback comes
                     // this is the overwhelming majority of cases, and we keep the list ordered this way.
-                    paymentMethodsList.add(paymentMethod.mapToModel())
+                    paymentMethodsList.add(paymentMethod.mapToModel(index))
                     checkPaymentMethodAvailability(getApplication(), paymentMethod, dropInConfiguration, this)
                 }
                 else -> {
@@ -97,7 +98,7 @@ class PaymentMethodsListViewModel(
                         Logger.e(TAG, "PaymentMethod not yet supported - $type")
                     } else {
                         Logger.d(TAG, "No details required - $type")
-                        paymentMethodsList.add(paymentMethod.mapToModel())
+                        paymentMethodsList.add(paymentMethod.mapToModel(index))
                     }
                     // If last payment method is redirect list might be ready now
                     checkIfListIsReady()
@@ -106,7 +107,7 @@ class PaymentMethodsListViewModel(
         }
     }
 
-    private fun PaymentMethod.mapToModel(): PaymentMethodModel {
+    private fun PaymentMethod.mapToModel(index: Int): PaymentMethodModel {
         val icon = when (type) {
             PaymentMethodTypes.SCHEME -> CARD_LOGO_TYPE
             PaymentMethodTypes.GOOGLE_PAY_LEGACY -> GOOGLE_PAY_LOGO_TYPE
@@ -115,6 +116,7 @@ class PaymentMethodsListViewModel(
         }
         val drawIconBorder = icon != GOOGLE_PAY_LOGO_TYPE
         return PaymentMethodModel(
+            index = index,
             type = type.orEmpty(),
             name = name.orEmpty(),
             icon = icon.orEmpty(),
