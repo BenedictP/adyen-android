@@ -35,7 +35,11 @@ class RedirectDelegate {
             val redirectUri = Uri.parse(url)
             val redirectIntent = RedirectUtil.createRedirectIntent(activity, redirectUri)
             try {
-                activity.startActivity(redirectIntent)
+                if (redirectIntent.second != null) {
+                    activity.startActivityForResult(redirectIntent.first, redirectIntent.second!!)
+                } else {
+                    activity.startActivity(redirectIntent.first)
+                }
             } catch (e: ActivityNotFoundException) {
                 throw ComponentException("Redirect to app failed.", e)
             }

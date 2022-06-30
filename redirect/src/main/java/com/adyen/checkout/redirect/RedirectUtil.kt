@@ -29,6 +29,7 @@ object RedirectUtil {
      * This value should be the beginning of the `returnUrl` sent on the payments/ call.
      */
     const val REDIRECT_RESULT_SCHEME = BuildConfig.checkoutRedirectScheme + "://"
+    const val CUSTOM_TAB_REDIRECT_REQUEST_CODE = 5
 
     private const val PAYLOAD_PARAMETER = "payload"
     private const val REDIRECT_RESULT_PARAMETER = "redirectResult"
@@ -107,14 +108,14 @@ object RedirectUtil {
      * @return And intent that targets either another app or a Web page.
      */
     @JvmStatic
-    fun createRedirectIntent(context: Context, uri: Uri): Intent {
+    fun createRedirectIntent(context: Context, uri: Uri): Pair<Intent, Int?> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            createCustomTabIntent(context, uri)
+            Pair(createCustomTabIntent(context, uri), CUSTOM_TAB_REDIRECT_REQUEST_CODE)
         } else {
             if (determineResolveResult(context, uri).type == ResolveResult.Type.APPLICATION) {
-                Intent(Intent.ACTION_VIEW, uri)
+                Pair(Intent(Intent.ACTION_VIEW, uri), null)
             } else {
-                createCustomTabIntent(context, uri)
+                Pair(createCustomTabIntent(context, uri), CUSTOM_TAB_REDIRECT_REQUEST_CODE)
             }
         }
     }
