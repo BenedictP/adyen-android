@@ -136,15 +136,22 @@ class DropInViewModel(
     }
 
     fun shouldSkipToSinglePaymentMethod(): Boolean {
-        val noStored = paymentMethodsApiResponse.storedPaymentMethods.isNullOrEmpty()
-        val singlePm = paymentMethodsApiResponse.paymentMethods?.size == 1
+        val singleStoredSize = paymentMethodsApiResponse.storedPaymentMethods?.size ?: 0
+        val singlePmSize = paymentMethodsApiResponse.paymentMethods?.size ?: 0
 
-        val firstPaymentMethod = paymentMethodsApiResponse.paymentMethods?.firstOrNull()
-        val paymentMethodHasComponent = PaymentMethodTypes.SUPPORTED_PAYMENT_METHODS.contains(firstPaymentMethod?.type) &&
-            !GooglePayComponent.PAYMENT_METHOD_TYPES.contains(firstPaymentMethod?.type) &&
-            !PaymentMethodTypes.SUPPORTED_ACTION_ONLY_PAYMENT_METHODS.contains(firstPaymentMethod?.type)
+        val paymentMethodType = if (singleStoredSize == 1 && singlePmSize == 0) {
+            paymentMethodsApiResponse.storedPaymentMethods?.getOrNull(0)?.type
+        } else if (singleStoredSize == 0 && singlePmSize == 1) {
+            paymentMethodsApiResponse.paymentMethods?.getOrNull(0)?.type
+        } else {
+            null
+        }
 
-        return noStored && singlePm && paymentMethodHasComponent && dropInConfiguration.skipListWhenSinglePaymentMethod
+        if (paymentMethodType == null) {
+            return false
+        }
+
+        return dropInConfiguration.skipListWhenSinglePaymentMethod
     }
 
     /**
