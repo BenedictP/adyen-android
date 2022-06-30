@@ -39,7 +39,7 @@ public final class SSLSocketUtil {
      */
     @NonNull
     private static SSLSocketFactory getTLSSocketFactory() throws NoSuchAlgorithmException, KeyManagementException {
-        final SSLContext context = SSLContext.getInstance("TLS");
+        final SSLContext context = SSLContext.getInstance("TLSv1.2");
         context.init(null, null, null);
         return context.getSocketFactory();
     }
