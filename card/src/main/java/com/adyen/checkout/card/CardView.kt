@@ -100,6 +100,7 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         } else {
             binding.textInputLayoutCardHolder.isVisible = component.isHolderNameRequired()
             binding.switchStorePaymentMethod.isVisible = component.showStorePaymentField()
+            binding.switchStorePaymentMethod.isChecked = true
         }
         notifyInputDataChanged()
     }
