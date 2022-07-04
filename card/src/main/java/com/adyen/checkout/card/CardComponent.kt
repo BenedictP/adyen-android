@@ -467,6 +467,10 @@ class CardComponent private constructor(
         return configuration.isStorePaymentFieldVisible
     }
 
+    fun payButtonCustomText() : String? {
+        return configuration.payButtonCustomText
+    }
+
     @StringRes fun getKcpBirthDateOrTaxNumberHint(input: String): Int {
         return when {
             input.length > KcpValidationUtils.KCP_BIRTH_DATE_LENGTH -> R.string.checkout_kcp_tax_number_hint

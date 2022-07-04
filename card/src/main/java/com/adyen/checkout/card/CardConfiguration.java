@@ -42,6 +42,7 @@ public class CardConfiguration extends Configuration {
     private final boolean mHolderNameRequired;
     private final List<CardType> mSupportedCardTypes;
     private final boolean mShowStorePaymentField;
+    private final String mPayButtonCustomText;
     private final boolean mHideCvc;
     private final boolean mHideCvcStoredCard;
     private final SocialSecurityNumberVisibility mSocialSecurityNumberVisibility;
@@ -72,6 +73,7 @@ public class CardConfiguration extends Configuration {
         mSupportedCardTypes = builder.mBuilderSupportedCardTypes;
         mShopperReference = builder.mShopperReference;
         mShowStorePaymentField = builder.mBuilderShowStorePaymentField;
+        mPayButtonCustomText = builder.mBuilderPayButtonCustomText;
         mHideCvc = builder.mBuilderHideCvc;
         mHideCvcStoredCard = builder.mBuilderHideCvcStoredCard;
         mSocialSecurityNumberVisibility = builder.mBuilderSocialSecurityNumberVisibility;
@@ -87,6 +89,7 @@ public class CardConfiguration extends Configuration {
         mHolderNameRequired = ParcelUtils.readBoolean(in);
         mSupportedCardTypes = in.readArrayList(CardType.class.getClassLoader());
         mShowStorePaymentField = ParcelUtils.readBoolean(in);
+        mPayButtonCustomText = in.readString();
         mHideCvc = ParcelUtils.readBoolean(in);
         mHideCvcStoredCard = ParcelUtils.readBoolean(in);
         mSocialSecurityNumberVisibility = SocialSecurityNumberVisibility.valueOf(in.readString());
@@ -103,6 +106,7 @@ public class CardConfiguration extends Configuration {
         ParcelUtils.writeBoolean(dest, mHolderNameRequired);
         dest.writeList(mSupportedCardTypes);
         ParcelUtils.writeBoolean(dest, mShowStorePaymentField);
+        dest.writeString(mPayButtonCustomText);
         ParcelUtils.writeBoolean(dest, mHideCvc);
         ParcelUtils.writeBoolean(dest, mHideCvcStoredCard);
         dest.writeString(mSocialSecurityNumberVisibility.name());
@@ -144,6 +148,10 @@ public class CardConfiguration extends Configuration {
 
     public boolean isStorePaymentFieldVisible() {
         return mShowStorePaymentField;
+    }
+
+    public String getPayButtonCustomText() {
+        return mPayButtonCustomText;
     }
 
     @NonNull
@@ -192,6 +200,7 @@ public class CardConfiguration extends Configuration {
         private List<CardType> mBuilderSupportedCardTypes = Collections.emptyList();
         private boolean mBuilderHolderNameRequired;
         private boolean mBuilderShowStorePaymentField = true;
+        private String mBuilderPayButtonCustomText;
         private String mShopperReference;
         private boolean mBuilderHideCvc;
         private boolean mBuilderHideCvcStoredCard;
@@ -209,6 +218,7 @@ public class CardConfiguration extends Configuration {
             mBuilderSupportedCardTypes = cardConfiguration.getSupportedCardTypes();
             mBuilderHolderNameRequired = cardConfiguration.isHolderNameRequired();
             mBuilderShowStorePaymentField = cardConfiguration.isStorePaymentFieldVisible();
+            mBuilderPayButtonCustomText = cardConfiguration.getPayButtonCustomText();
             mShopperReference = cardConfiguration.getShopperReference();
             mBuilderHideCvc = cardConfiguration.isHideCvc();
             mBuilderHideCvcStoredCard = cardConfiguration.isHideCvcStoredCard();
@@ -289,6 +299,12 @@ public class CardConfiguration extends Configuration {
         @NonNull
         public Builder setShowStorePaymentField(boolean showStorePaymentField) {
             mBuilderShowStorePaymentField = showStorePaymentField;
+            return this;
+        }
+
+        @NonNull
+        public Builder setPayButtonCustomText(String customPayButtonText) {
+            mBuilderPayButtonCustomText = customPayButtonText;
             return this;
         }
 

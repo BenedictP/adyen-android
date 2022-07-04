@@ -113,6 +113,10 @@ class CardComponentDialogFragment : BaseComponentDialogFragment() {
             cardListAdapter.setFilteredCard(emptyList())
         }
 
+        if (cardComponent.payButtonCustomText() != null) {
+            binding.payButton.text = cardComponent.payButtonCustomText()
+        }
+
         componentDialogViewModel.componentStateChanged(component.state)
     }
 }
