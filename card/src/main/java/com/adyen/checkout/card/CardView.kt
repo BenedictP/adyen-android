@@ -92,7 +92,8 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         initAddressFormInput()
 
         binding.switchStorePaymentMethod.setOnCheckedChangeListener { _, isChecked ->
-            component.inputData.isStorePaymentSelected = isChecked
+            component.inputData.isStorePaymentSelected =
+                isChecked && component.showStorePaymentField()
             notifyInputDataChanged()
         }
         if (component.isStoredPaymentMethod()) {
