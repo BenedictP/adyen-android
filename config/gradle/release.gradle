@@ -103,11 +103,11 @@ project.afterEvaluate {
 
         repositories {
             maven {
-                name = "gygnexus"
-                url = "https://nexus.gygadmin.com/repository/bitrise-artifacts/"
+                name = "gygcodeartifact"
+                url = "https://getyourguide-130607246975.d.codeartifact.eu-central-1.amazonaws.com/maven/private-store/"
                 credentials {
-                    username System.getenv()["GYG_NEXUS_USERNAME"]
-                    password System.getenv()["GYG_NEXUS_PASSWORD"]
+                    username "aws"
+                    password System.getenv()["CODEARTIFACT_AUTH_TOKEN"]
                 }
             }
         }
