@@ -717,7 +717,7 @@ class DropInActivity : AppCompatActivity(), DropInBottomSheetDialogFragment.Prot
 
     private fun setLoading(showLoading: Boolean) {
         if (showLoading) {
-            if (!loadingDialog.isAdded) {
+            if (!loadingDialog.isAdded && getFragmentByTag(LOADING_FRAGMENT_TAG) == null) {
                 loadingDialog.show(supportFragmentManager, LOADING_FRAGMENT_TAG)
             }
         } else {
