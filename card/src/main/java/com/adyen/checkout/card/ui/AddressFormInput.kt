@@ -11,6 +11,7 @@ package com.adyen.checkout.card.ui
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View.OnFocusChangeListener
 import android.widget.AdapterView
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
@@ -214,15 +215,16 @@ class AddressFormInput @JvmOverloads constructor(
     }
 
     private fun initForm(addressSpecification: AddressSpecification) {
+        val isOptional = component.outputData?.addressState?.isOptional ?: false
         initHeader()
         initCountryInput(addressSpecification.country.styleResId)
-        initStreetInput(addressSpecification.street.styleResId)
-        initHouseNumberInput(addressSpecification.houseNumber.styleResId)
-        initApartmentSuiteInput(addressSpecification.apartmentSuite.styleResId)
-        initPostalCodeInput(addressSpecification.postalCode.styleResId)
-        initCityInput(addressSpecification.city.styleResId)
-        initProvinceTerritoryInput(addressSpecification.stateProvince.styleResId)
-        initStatesInput(addressSpecification.stateProvince.styleResId)
+        initStreetInput(addressSpecification.street.getStyleResId(isOptional))
+        initHouseNumberInput(addressSpecification.houseNumber.getStyleResId(isOptional))
+        initApartmentSuiteInput(addressSpecification.apartmentSuite.getStyleResId(isOptional))
+        initPostalCodeInput(addressSpecification.postalCode.getStyleResId(isOptional))
+        initCityInput(addressSpecification.city.getStyleResId(isOptional))
+        initProvinceTerritoryInput(addressSpecification.stateProvince.getStyleResId(isOptional))
+        initStatesInput(addressSpecification.stateProvince.getStyleResId(isOptional))
     }
 
     private fun initHeader() {
@@ -239,11 +241,8 @@ class AddressFormInput @JvmOverloads constructor(
         )
     }
 
-    private fun initStreetInput(styleResId: Int) {
-        textInputLayoutStreet?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initStreetInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutStreet?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextStreet?.apply {
             setText(component.inputData.address.street)
             setOnChangeListener {
@@ -262,11 +261,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initHouseNumberInput(styleResId: Int) {
-        textInputLayoutHouseNumber?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initHouseNumberInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutHouseNumber?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextHouseNumber?.apply {
             setText(component.inputData.address.houseNumberOrName)
             setOnChangeListener {
@@ -285,11 +281,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initApartmentSuiteInput(styleResId: Int) {
-        textInputLayoutApartmentSuite?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initApartmentSuiteInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutApartmentSuite?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextApartmentSuite?.apply {
             setText(component.inputData.address.apartmentSuite)
             setOnChangeListener {
@@ -307,11 +300,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initPostalCodeInput(styleResId: Int) {
-        textInputLayoutPostalCode?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initPostalCodeInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutPostalCode?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextPostalCode?.apply {
             setText(component.inputData.address.postalCode)
             setOnChangeListener {
@@ -330,11 +320,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initCityInput(styleResId: Int) {
-        textInputLayoutCity?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initCityInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutCity?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextCity?.apply {
             setText(component.inputData.address.city)
             setOnChangeListener {
@@ -353,11 +340,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initProvinceTerritoryInput(styleResId: Int) {
-        textInputLayoutProvinceTerritory?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initProvinceTerritoryInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutProvinceTerritory?.setLocalizedHintFromStyle(it, localizedContext) }
         editTextProvinceTerritory?.apply {
             setText(component.inputData.address.stateOrProvince)
             setOnChangeListener {
@@ -376,11 +360,8 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
-    private fun initStatesInput(styleResId: Int) {
-        textInputLayoutState?.setLocalizedHintFromStyle(
-            styleResId,
-            localizedContext
-        )
+    private fun initStatesInput(styleResId: Int?) {
+        styleResId?.let { textInputLayoutState?.setLocalizedHintFromStyle(it, localizedContext) }
         autoCompleteTextViewState?.apply {
             setText(statesAdapter.getItem { it.selected }?.name)
             inputType = 0
@@ -392,78 +373,44 @@ class AddressFormInput @JvmOverloads constructor(
         }
     }
 
+    fun updateAddressHint(isOptional: Boolean) {
+        val spec = AddressSpecification.fromString(component.inputData.address.country)
+
+        val streetStyleResId = spec.street.getStyleResId(isOptional)
+        streetStyleResId?.let {
+            textInputLayoutStreet?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val houseNumberStyleResId = spec.houseNumber.getStyleResId(isOptional)
+        houseNumberStyleResId?.let {
+            textInputLayoutHouseNumber?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val apartmentSuiteStyleResId = spec.apartmentSuite.getStyleResId(isOptional)
+        apartmentSuiteStyleResId?.let {
+            textInputLayoutApartmentSuite?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val postalCodeStyleResId = spec.postalCode.getStyleResId(isOptional)
+        postalCodeStyleResId?.let {
+            textInputLayoutPostalCode?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val cityStyleResId = spec.city.getStyleResId(isOptional)
+        cityStyleResId?.let {
+            textInputLayoutCity?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val provinceTerritoryStyleResId = spec.stateProvince.getStyleResId(isOptional)
+        provinceTerritoryStyleResId?.let {
+            textInputLayoutProvinceTerritory?.setLocalizedHintFromStyle(it, localizedContext)
+        }
+
+        val statesStyleResId = spec.stateProvince.getStyleResId(isOptional)
+        statesStyleResId?.let { textInputLayoutState?.setLocalizedHintFromStyle(it, localizedContext) }
+    }
+
     private fun notifyInputDataChanged() {
         component.inputDataChanged(component.inputData)
     }
-
-    /**
-     * Specification for address form alternatives depending on the country.
-     */
-    @Suppress("LongParameterList")
-    enum class AddressSpecification(
-        internal val street: AddressFieldSpec,
-        internal val houseNumber: AddressFieldSpec,
-        internal val apartmentSuite: AddressFieldSpec,
-        internal val postalCode: AddressFieldSpec,
-        internal val city: AddressFieldSpec,
-        internal val stateProvince: AddressFieldSpec,
-        internal val country: AddressFieldSpec
-    ) {
-        BR(
-            street = AddressFieldSpec(true, R.style.AdyenCheckout_Card_StreetInput),
-            houseNumber = AddressFieldSpec(true, R.style.AdyenCheckout_Card_HouseNumberInput),
-            apartmentSuite = AddressFieldSpec(false, R.style.AdyenCheckout_Card_ApartmentSuiteInput),
-            postalCode = AddressFieldSpec(true, R.style.AdyenCheckout_Card_PostalCodeInput),
-            city = AddressFieldSpec(true, R.style.AdyenCheckout_Card_CityInput),
-            stateProvince = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_StatesInput),
-            country = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_CountryInput)
-        ),
-        CA(
-            street = AddressFieldSpec(true, R.style.AdyenCheckout_Card_AddressInput),
-            houseNumber = AddressFieldSpec(false, 0),
-            apartmentSuite = AddressFieldSpec(false, R.style.AdyenCheckout_Card_ApartmentSuiteInput),
-            postalCode = AddressFieldSpec(true, R.style.AdyenCheckout_Card_PostalCodeInput),
-            city = AddressFieldSpec(true, R.style.AdyenCheckout_Card_CityInput),
-            stateProvince = AddressFieldSpec(true, R.style.AdyenCheckout_Card_ProvinceTerritoryInput),
-            country = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_CountryInput)
-        ),
-        GB(
-            street = AddressFieldSpec(true, R.style.AdyenCheckout_Card_StreetInput),
-            houseNumber = AddressFieldSpec(true, R.style.AdyenCheckout_Card_HouseNumberInput),
-            apartmentSuite = AddressFieldSpec(false, 0),
-            postalCode = AddressFieldSpec(true, R.style.AdyenCheckout_Card_PostalCodeInput),
-            city = AddressFieldSpec(true, R.style.AdyenCheckout_Card_CityTownInput),
-            stateProvince = AddressFieldSpec(false, 0),
-            country = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_CountryInput)
-        ),
-        US(
-            street = AddressFieldSpec(true, R.style.AdyenCheckout_Card_AddressInput),
-            houseNumber = AddressFieldSpec(false, 0),
-            apartmentSuite = AddressFieldSpec(false, R.style.AdyenCheckout_Card_ApartmentSuiteInput),
-            postalCode = AddressFieldSpec(true, R.style.AdyenCheckout_Card_ZipCodeInput),
-            city = AddressFieldSpec(true, R.style.AdyenCheckout_Card_CityInput),
-            stateProvince = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_StatesInput),
-            country = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_CountryInput)
-        ),
-        DEFAULT(
-            street = AddressFieldSpec(true, R.style.AdyenCheckout_Card_StreetInput),
-            houseNumber = AddressFieldSpec(true, R.style.AdyenCheckout_Card_HouseNumberInput),
-            apartmentSuite = AddressFieldSpec(false, R.style.AdyenCheckout_Card_ApartmentSuiteInput),
-            postalCode = AddressFieldSpec(true, R.style.AdyenCheckout_Card_PostalCodeInput),
-            city = AddressFieldSpec(true, R.style.AdyenCheckout_Card_CityInput),
-            stateProvince = AddressFieldSpec(true, R.style.AdyenCheckout_Card_ProvinceTerritoryInput),
-            country = AddressFieldSpec(true, R.style.AdyenCheckout_DropdownTextInputLayout_CountryInput)
-        );
-
-        companion object {
-            fun fromString(countryCode: String?): AddressSpecification {
-                return values().firstOrNull { it.name == countryCode } ?: DEFAULT
-            }
-        }
-    }
-
-    internal data class AddressFieldSpec(
-        val isRequired: Boolean,
-        val styleResId: Int
-    )
 }

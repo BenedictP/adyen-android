@@ -192,7 +192,10 @@ class CardComponent private constructor(
         val sortedCardTypes = DualBrandedCardUtils.sortBrands(supportedCardTypes)
         val outputCardTypes = markSelectedCard(sortedCardTypes, selectedCardIndex)
 
-        val selectedOrFirstCardType = outputCardTypes.firstOrNull { it.isSelected } ?: outputCardTypes.firstOrNull()
+        val selectedCardType = outputCardTypes.firstOrNull { it.isSelected }
+        val selectedOrFirstCardType = selectedCardType ?: outputCardTypes.firstOrNull()
+
+        val reliableSelectedCard = if (isReliable) selectedOrFirstCardType else null
 
         // perform a Luhn Check if no brands are detected
         val enableLuhnCheck = selectedOrFirstCardType?.enableLuhnCheck ?: true
@@ -213,7 +216,7 @@ class CardComponent private constructor(
             cardDelegate.validateSocialSecurityNumber(socialSecurityNumber),
             cardDelegate.validateKcpBirthDateOrTaxNumber(kcpBirthDateOrTaxNumber),
             cardDelegate.validateKcpCardPassword(kcpCardPassword),
-            cardDelegate.validateAddress(addressInputModel, addressFormUIState),
+            cardDelegate.validateAddress(addressInputModel, addressFormUIState, reliableSelectedCard),
             makeInstallmentFieldState(selectedInstallmentOption),
             isStorePaymentSelected,
             makeCvcUIState(selectedOrFirstCardType?.cvcPolicy),
@@ -428,7 +431,7 @@ class CardComponent private constructor(
         }
 
         if (isDualBrandedFlow(stateOutputData)) {
-            cardPaymentMethod.brand = stateOutputData.detectedCardTypes.first { it.isSelected }.cardType.txVariant
+            cardPaymentMethod.brand = stateOutputData.detectedCardTypes.firstOrNull { it.isSelected }?.cardType?.txVariant
         }
 
         cardPaymentMethod.fundingSource = cardDelegate.getFundingSource()

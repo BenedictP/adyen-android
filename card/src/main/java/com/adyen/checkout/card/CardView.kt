@@ -51,6 +51,7 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     companion object {
         private const val UNSELECTED_BRAND_LOGO_ALPHA = 0.2f
         private const val SELECTED_BRAND_LOGO_ALPHA = 1f
+        private const val UNSELECTED_BRAND_INDEX = -1
         private const val PRIMARY_BRAND_INDEX = 0
         private const val SECONDARY_BRAND_INDEX = 1
     }
@@ -166,6 +167,7 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             updateInstallments(cardOutputData)
             updateCountries(cardOutputData.countryOptions)
             updateStates(cardOutputData.stateOptions)
+            updateAddressHint(cardOutputData.addressUIState, cardOutputData.addressState.isOptional)
         }
         if (component.isStoredPaymentMethod() && component.requiresInput()) {
             binding.textInputLayoutSecurityCode.editText?.requestFocus()
@@ -268,13 +270,26 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             binding.editTextCardNumber.setAmexCardFormat(false)
             resetBrandSelectionInput()
         } else {
+            val firstDetectedCardType = detectedCardTypes.first()
+
             binding.cardBrandLogoImageViewPrimary.setStrokeWidth(RoundCornerImageView.DEFAULT_STROKE_WIDTH)
-            mImageLoader?.load(detectedCardTypes[0].cardType.txVariant, binding.cardBrandLogoImageViewPrimary, 0, R.drawable.ic_card)
+            mImageLoader?.load(firstDetectedCardType.cardType.txVariant, binding.cardBrandLogoImageViewPrimary, 0, R.drawable.ic_card)
             setDualBrandedCardImages(detectedCardTypes, cardOutputData.cardNumberState.validation)
 
             // TODO: 29/01/2021 get this logic from OutputData
             val isAmex = detectedCardTypes.any { it.cardType == CardType.AMERICAN_EXPRESS }
             binding.editTextCardNumber.setAmexCardFormat(isAmex)
+
+            if (detectedCardTypes.size == 1 &&
+                firstDetectedCardType.panLength == binding.editTextCardNumber.rawValue.length
+            ) {
+                val cardNumberValidation = cardOutputData.cardNumberState.validation
+                if (cardNumberValidation is Validation.Invalid) {
+                    setCardNumberError(cardNumberValidation.reason)
+                } else {
+                    goToNextInputIfFocus(binding.editTextCardNumber)
+                }
+            }
         }
     }
 
@@ -312,8 +327,8 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private fun initCardNumberInput() {
         binding.editTextCardNumber.setOnChangeListener {
             component.inputData.cardNumber = binding.editTextCardNumber.rawValue
-            notifyInputDataChanged()
             setCardErrorState(true)
+            notifyInputDataChanged()
         }
         binding.editTextCardNumber.onFocusChangeListener = OnFocusChangeListener { _: View?, hasFocus: Boolean ->
             setCardErrorState(hasFocus)
@@ -348,6 +363,7 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
 
     private fun initCardBrandLogoViews(selectedIndex: Int) {
         when (selectedIndex) {
+            UNSELECTED_BRAND_INDEX -> deselectBrands()
             PRIMARY_BRAND_INDEX -> selectPrimaryBrand()
             SECONDARY_BRAND_INDEX -> selectSecondaryBrand()
             else -> throw CheckoutException("Illegal brand index selected. Selected index must be either 0 or 1.")
@@ -371,6 +387,11 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
     private fun resetBrandSelectionInput() {
         binding.cardBrandLogoContainerPrimary.setOnClickListener(null)
         binding.cardBrandLogoContainerSecondary.setOnClickListener(null)
+    }
+
+    private fun deselectBrands() {
+        binding.cardBrandLogoImageViewPrimary.alpha = UNSELECTED_BRAND_LOGO_ALPHA
+        binding.cardBrandLogoImageViewSecondary.alpha = UNSELECTED_BRAND_LOGO_ALPHA
     }
 
     private fun selectPrimaryBrand() {
@@ -630,6 +651,23 @@ class CardView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
             AddressFormUIState.NONE -> {
                 binding.addressFormInput.isVisible = false
                 binding.textInputLayoutPostalCode.isVisible = false
+            }
+        }
+    }
+
+    private fun updateAddressHint(addressFormUIState: AddressFormUIState, isOptional: Boolean) {
+        when (addressFormUIState) {
+            AddressFormUIState.FULL_ADDRESS -> binding.addressFormInput.updateAddressHint(isOptional)
+            AddressFormUIState.POSTAL_CODE -> {
+                val postalCodeStyleResId = if (isOptional) {
+                    R.style.AdyenCheckout_Card_PostalCodeInput_Optional
+                } else {
+                    R.style.AdyenCheckout_Card_PostalCodeInput
+                }
+                binding.textInputLayoutPostalCode.setLocalizedHintFromStyle(postalCodeStyleResId, localizedContext)
+            }
+            else -> {
+                // no ops
             }
         }
     }

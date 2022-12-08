@@ -117,8 +117,17 @@ class NewCardDelegate(
         }
     }
 
-    override fun validateAddress(addressInputModel: AddressInputModel, addressFormUIState: AddressFormUIState): AddressOutputData {
-        return AddressValidationUtils.validateAddressInput(addressInputModel, addressFormUIState)
+    override fun validateAddress(
+        addressInputModel: AddressInputModel,
+        addressFormUIState: AddressFormUIState,
+        detectedCardType: DetectedCardType?
+    ): AddressOutputData {
+        return AddressValidationUtils.validateAddressInput(
+            addressInputModel = addressInputModel,
+            addressFormUIState = addressFormUIState,
+            addressConfiguration = cardConfiguration.addressConfiguration,
+            detectedCardType = detectedCardType
+        )
     }
 
     override fun isCvcHidden(): Boolean {
@@ -225,7 +234,8 @@ class NewCardDelegate(
                 else -> Brand.FieldPolicy.REQUIRED
             },
             expiryDatePolicy = Brand.FieldPolicy.REQUIRED,
-            isSupported = supportedCardTypes.contains(cardType)
+            panLength = null,
+            isSupported = supportedCardTypes.contains(cardType),
         )
     }
 }

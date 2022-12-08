@@ -172,10 +172,7 @@ class DropInActivity : AppCompatActivity(), DropInBottomSheetDialogFragment.Prot
         setContentView(R.layout.activity_drop_in)
         overridePendingTransition(0, 0)
 
-        val bundle = savedInstanceState ?: intent.extras
-
-        val initializationSuccessful = assertBundleExists(bundle)
-        if (!initializationSuccessful) {
+        if (!DropInViewModel.assertBundleExists(intent.extras)) {
             terminateWithError("Initialization failed")
             return
         }
@@ -261,14 +258,6 @@ class DropInActivity : AppCompatActivity(), DropInBottomSheetDialogFragment.Prot
         // We need to get the Locale from sharedPrefs because attachBaseContext is called before onCreate, so we don't have the Config object yet.
         val locale = DropInPrefs.getShopperLocale(baseContext)
         return baseContext.createLocalizedContext(locale)
-    }
-
-    private fun assertBundleExists(bundle: Bundle?): Boolean {
-        if (bundle == null) {
-            Logger.e(TAG, "Failed to initialize - bundle is null")
-            return false
-        }
-        return true
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

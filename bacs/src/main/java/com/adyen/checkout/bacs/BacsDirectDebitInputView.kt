@@ -13,6 +13,7 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnFocusChangeListener
+import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import com.adyen.checkout.bacs.databinding.BacsDirectDebitInputViewBinding
@@ -68,7 +69,6 @@ class BacsDirectDebitInputView @JvmOverloads constructor(context: Context, attrs
         initSortCodeInput()
         initShopperEmailInput()
         initConsentSwitches()
-        initButton()
     }
 
     override fun isConfirmationRequired(): Boolean {
@@ -108,6 +108,20 @@ class BacsDirectDebitInputView @JvmOverloads constructor(context: Context, attrs
                 }
                 binding.textInputLayoutShopperEmail.error = mLocalizedContext.getString(shopperEmailValidation.reason)
             }
+            if (!it.isAmountConsentChecked) {
+                if (!isErrorFocused) {
+                    isErrorFocused = true
+                    binding.switchConsentAmount.requestFocus()
+                }
+                binding.textViewErrorConsentAmount.isVisible = true
+            }
+            if (!it.isAccountConsentChecked) {
+                if (!isErrorFocused) {
+                    isErrorFocused = true
+                    binding.switchConsentAccount.requestFocus()
+                }
+                binding.textViewErrorConsentAccount.isVisible = true
+            }
         }
     }
 
@@ -128,14 +142,11 @@ class BacsDirectDebitInputView @JvmOverloads constructor(context: Context, attrs
             R.style.AdyenCheckout_Bacs_ShopperEmailInput,
             localizedContext
         )
-        binding.switchConsentAmount.setLocalizedTextFromStyle(
-            R.style.AdyenCheckout_Bacs_Switch_Amount,
-            localizedContext
-        )
         binding.switchConsentAccount.setLocalizedTextFromStyle(
             R.style.AdyenCheckout_Bacs_Switch_Account,
             localizedContext
         )
+        setAmountConsentSwitchText()
     }
 
     override fun observeComponentChanges(lifecycleOwner: LifecycleOwner) {
@@ -223,21 +234,28 @@ class BacsDirectDebitInputView @JvmOverloads constructor(context: Context, attrs
     private fun initConsentSwitches() {
         binding.switchConsentAmount.setOnCheckedChangeListener { _, isChecked ->
             component.inputData.isAmountConsentChecked = isChecked
+            binding.textViewErrorConsentAmount.isVisible = !isChecked
             notifyInputDataChanged()
         }
 
         binding.switchConsentAccount.setOnCheckedChangeListener { _, isChecked ->
             component.inputData.isAccountConsentChecked = isChecked
+            binding.textViewErrorConsentAccount.isVisible = !isChecked
             notifyInputDataChanged()
         }
     }
 
-    private fun initButton() {
+    private fun setAmountConsentSwitchText() {
         if (!component.configuration.amount.isEmpty) {
             val formattedAmount =
                 CurrencyUtils.formatAmount(component.configuration.amount, component.configuration.shopperLocale)
             binding.switchConsentAmount.text =
                 localizedContext.getString(R.string.bacs_consent_amount_specified, formattedAmount)
+        } else {
+            binding.switchConsentAmount.setLocalizedTextFromStyle(
+                R.style.AdyenCheckout_Bacs_Switch_Amount,
+                localizedContext
+            )
         }
     }
 
