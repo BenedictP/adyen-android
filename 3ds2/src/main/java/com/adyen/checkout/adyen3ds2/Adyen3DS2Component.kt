@@ -37,12 +37,12 @@ import com.adyen.checkout.core.log.LogUtil
 import com.adyen.checkout.core.log.Logger
 import com.adyen.checkout.redirect.RedirectDelegate
 import com.adyen.threeds2.AuthenticationRequestParameters
-import com.adyen.threeds2.ChallengeStatusReceiver
-import com.adyen.threeds2.CompletionEvent
-import com.adyen.threeds2.ProtocolErrorEvent
-import com.adyen.threeds2.RuntimeErrorEvent
+import com.adyen.threeds2.ChallengeResult
+import com.adyen.threeds2.ChallengeStatusHandler
+import com.adyen.threeds2.InitializeResult
 import com.adyen.threeds2.ThreeDS2Service
 import com.adyen.threeds2.Transaction
+import com.adyen.threeds2.TransactionResult
 import com.adyen.threeds2.customization.UiCustomization
 import com.adyen.threeds2.exception.InvalidInputException
 import com.adyen.threeds2.exception.SDKAlreadyInitializedException
@@ -64,7 +64,9 @@ class Adyen3DS2Component(
     private val submitFingerprintRepository: SubmitFingerprintRepository,
     private val adyen3DS2Serializer: Adyen3DS2Serializer,
     private val redirectDelegate: RedirectDelegate
-) : BaseActionComponent<Adyen3DS2Configuration>(savedStateHandle, application, configuration), ChallengeStatusReceiver, IntentHandlingComponent {
+) : BaseActionComponent<Adyen3DS2Configuration>(savedStateHandle, application, configuration),
+    ChallengeStatusHandler,
+    IntentHandlingComponent {
 
     private var mTransaction: Transaction? = null
     private var mUiCustomization: UiCustomization? = null
@@ -117,12 +119,14 @@ class Adyen3DS2Component(
                 }
                 identifyShopper(activity, action.token.orEmpty(), submitFingerprintAutomatically = false)
             }
+
             is Threeds2ChallengeAction -> {
                 if (action.token.isNullOrEmpty()) {
                     throw ComponentException("Challenge token not found.")
                 }
                 challengeShopper(activity, action.token.orEmpty())
             }
+
             is Threeds2Action -> {
                 if (action.token.isNullOrEmpty()) {
                     throw ComponentException("3DS2 token not found.")
@@ -145,14 +149,10 @@ class Adyen3DS2Component(
         }
     }
 
-    override fun completed(completionEvent: CompletionEvent) {
+    private fun onCompleted(transactionStatus: String) {
         Logger.d(TAG, "challenge completed")
         try {
-            // Check whether authorizationToken was set and create the corresponding details object
-            val token = authorizationToken
-            val details =
-                if (token == null) adyen3DS2Serializer.createChallengeDetails(completionEvent)
-                else adyen3DS2Serializer.createThreeDsResultDetails(completionEvent, token)
+            val details = makeDetails(transactionStatus)
             notifyDetails(details)
         } catch (e: CheckoutException) {
             notifyException(e)
@@ -161,34 +161,52 @@ class Adyen3DS2Component(
         }
     }
 
-    override fun cancelled() {
+    private fun onCancelled() {
         Logger.d(TAG, "challenge cancelled")
-        notifyException(Cancelled3DS2Exception("Challenge canceled."))
+        notifyException(Cancelled3DS2Exception("Challenge cancelled."))
         closeTransaction(getApplication())
     }
 
-    override fun timedout() {
+    private fun onTimeout(result: ChallengeResult.Timeout) {
         Logger.d(TAG, "challenge timed out")
-        notifyException(Authentication3DS2Exception("Challenge timed out."))
-        closeTransaction(getApplication())
-    }
-
-    override fun protocolError(protocolErrorEvent: ProtocolErrorEvent) {
-        with(protocolErrorEvent.errorMessage) {
-            Logger.e(TAG, "protocolError - $errorCode - $errorDescription - $errorDetails")
-            notifyException(Authentication3DS2Exception("Protocol Error - $this"))
+        try {
+            val details = makeDetails(result.transactionStatus, result.additionalDetails)
+            notifyDetails(details)
+        } catch (e: CheckoutException) {
+            notifyException(e)
+        } finally {
+            closeTransaction(getApplication())
         }
-        closeTransaction(getApplication())
     }
 
-    override fun runtimeError(runtimeErrorEvent: RuntimeErrorEvent) {
-        Logger.d(TAG, "runtimeError")
-        notifyException(Authentication3DS2Exception("Runtime Error - " + runtimeErrorEvent.errorMessage))
-        closeTransaction(getApplication())
+    private fun onError(result: ChallengeResult.Error) {
+        Logger.d(TAG, "challenge timed out")
+        try {
+            val details = makeDetails(result.transactionStatus, result.additionalDetails)
+            notifyDetails(details)
+        } catch (e: CheckoutException) {
+            notifyException(e)
+        } finally {
+            closeTransaction(getApplication())
+        }
     }
 
+    override fun onCompletion(result: ChallengeResult) {
+        when (result) {
+            is ChallengeResult.Cancelled -> onCancelled()
+            is ChallengeResult.Completed -> onCompleted(result.transactionStatus)
+            is ChallengeResult.Error -> onError(result)
+            is ChallengeResult.Timeout -> onTimeout(result)
+        }
+    }
+
+    @Suppress("LongMethod", "DestructuringDeclarationWithTooManyEntries", "ComplexMethod")
     @Throws(ComponentException::class)
-    private fun identifyShopper(activity: Activity, encodedFingerprintToken: String, submitFingerprintAutomatically: Boolean) {
+    private fun identifyShopper(
+        activity: Activity,
+        encodedFingerprintToken: String,
+        submitFingerprintAutomatically: Boolean
+    ) {
         Logger.d(TAG, "identifyShopper - submitFingerprintAutomatically: $submitFingerprintAutomatically")
         val decodedFingerprintToken = Base64Encoder.decode(encodedFingerprintToken)
 
@@ -199,19 +217,37 @@ class Adyen3DS2Component(
         }
 
         val fingerprintToken = FingerprintToken.SERIALIZER.deserialize(fingerprintJson)
+        val (directoryServerId, directoryServerPublicKey, directoryServerRootCertificates, _, _) = fingerprintToken
+        if (directoryServerId == null || directoryServerPublicKey == null || directoryServerRootCertificates == null) {
+            val message = "directoryServerId, directoryServerPublicKey or directoryServerRootCertificates is null."
+            Logger.d(TAG, message)
+            notifyException(ComponentException(message))
+            return
+        }
+
         val configParameters = AdyenConfigParameters.Builder(
-            fingerprintToken.directoryServerId,
-            fingerprintToken.directoryServerPublicKey
-        ).build()
+            /* directoryServerId = */ directoryServerId,
+            /* directoryServerPublicKey = */ directoryServerPublicKey,
+            /* directoryServerRootCertificates = */ directoryServerRootCertificates,
+        )
+            .deviceParameterBlockList(setOf(PHONE_NUMBER_PARAMETER))
+            .build()
 
         val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
             Logger.e(TAG, "Unexpected uncaught 3DS2 Exception", throwable)
             notifyException(CheckoutException("Unexpected 3DS2 exception.", throwable))
         }
         viewModelScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
+            // This makes sure the 3DS2 SDK doesn't re-use any state from previous transactions
+            closeTransaction(getApplication())
             try {
                 Logger.d(TAG, "initialize 3DS2 SDK")
-                ThreeDS2Service.INSTANCE.initialize(activity, configParameters, null, mUiCustomization)
+                val result = ThreeDS2Service.INSTANCE.initialize(activity, configParameters, null, mUiCustomization)
+
+                if (result is InitializeResult.Failure) {
+                    val details = makeDetails(result.transactionStatus, result.additionalDetails)
+                    notifyDetails(details)
+                }
             } catch (e: SDKRuntimeException) {
                 notifyException(ComponentException("Failed to initialize 3DS2 SDK", e))
                 return@launch
@@ -222,11 +258,21 @@ class Adyen3DS2Component(
 
             mTransaction = try {
                 Logger.d(TAG, "create transaction")
-                if (fingerprintToken.threeDSMessageVersion != null) {
-                    ThreeDS2Service.INSTANCE.createTransaction(null, fingerprintToken.threeDSMessageVersion)
-                } else {
+                if (fingerprintToken.threeDSMessageVersion == null) {
                     notifyException(ComponentException("Failed to create 3DS2 Transaction. Missing threeDSMessageVersion inside fingerprintToken."))
                     return@launch
+                }
+
+                when (
+                    val result = ThreeDS2Service.INSTANCE.createTransaction(null, fingerprintToken.threeDSMessageVersion)
+                ) {
+                    is TransactionResult.Failure -> {
+                        val details = makeDetails(result.transactionStatus, result.additionalDetails)
+                        notifyDetails(details)
+                        null
+                    }
+
+                    is TransactionResult.Success -> result.transaction
                 }
             } catch (e: SDKNotInitializedException) {
                 notifyException(ComponentException("Failed to create 3DS2 Transaction", e))
@@ -264,9 +310,11 @@ class Adyen3DS2Component(
                         notifyDetails(result.details)
                     }
                 }
+
                 is SubmitFingerprintResult.Redirect -> {
                     redirectDelegate.makeRedirect(activity, result.action)
                 }
+
                 is SubmitFingerprintResult.Threeds2 -> {
                     handleAction(activity, result.action)
                 }
@@ -324,7 +372,7 @@ class Adyen3DS2Component(
             acsSignedContent = challenge.acsSignedContent
             // This field was introduced in version 2.2.0 so older protocols don't expect it to be present and might throw an error.
             if (challenge.messageVersion != PROTOCOL_VERSION_2_1_0) {
-                threeDSRequestorAppURL = ChallengeParameters.getEmbeddedRequestorAppURL(getApplication())
+                threeDSRequestorAppURL = configuration.threeDSRequestorAppURL
             }
         }
     }
@@ -354,16 +402,36 @@ class Adyen3DS2Component(
         }
     }
 
+    private fun makeDetails(transactionStatus: String, errorDetails: String? = null): JSONObject {
+        // Check whether authorizationToken was set and create the corresponding details object
+        val token = authorizationToken
+        return if (token == null) {
+            adyen3DS2Serializer.createChallengeDetails(
+                transactionStatus = transactionStatus,
+                errorDetails = errorDetails
+            )
+        } else {
+            adyen3DS2Serializer.createThreeDsResultDetails(
+                transactionStatus = transactionStatus,
+                errorDetails = errorDetails,
+                authorisationToken = token
+            )
+        }
+    }
+
     companion object {
         private val TAG = LogUtil.getTag()
 
         private const val AUTHORIZATION_TOKEN_KEY = "authorization_token"
 
         @JvmField
-        val PROVIDER: ActionComponentProvider<Adyen3DS2Component, Adyen3DS2Configuration> = Adyen3DS2ComponentProvider()
+        val PROVIDER: ActionComponentProvider<Adyen3DS2Component, Adyen3DS2Configuration> =
+            Adyen3DS2ComponentProvider()
 
         private const val DEFAULT_CHALLENGE_TIME_OUT = 10
         private const val PROTOCOL_VERSION_2_1_0 = "2.1.0"
+
+        private const val PHONE_NUMBER_PARAMETER = "A005"
 
         private var sGotDestroyedWhileChallenging = false
     }

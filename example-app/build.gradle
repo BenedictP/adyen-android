@@ -67,12 +67,16 @@ android {
         viewBinding true
     }
 
+    packagingOptions {
+        resources.excludes.add("META-INF/*")
+    }
+
 }
 
 dependencies {
     // Checkout
     implementation project(':drop-in')
-//    implementation "com.adyen.checkout:drop-in:4.9.0"
+//    implementation "com.adyen.checkout:drop-in:4.13.6"
 
     // Dependencies
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_version"

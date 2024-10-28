@@ -47,6 +47,9 @@ public abstract class BasePaymentComponent<
 
     private final MutableLiveData<OutputDataT> mOutputLiveData = new MutableLiveData<>();
 
+    @Nullable
+    private OutputDataT mOutputData;
+
     private boolean mIsCreatedForDropIn = false;
     private boolean mIsAnalyticsEnabled = true;
 
@@ -154,7 +157,6 @@ public abstract class BasePaymentComponent<
         }
     }
 
-
     @Override
     public void observeOutputData(@NonNull LifecycleOwner lifecycleOwner, @NonNull Observer<OutputDataT> observer) {
         // Parent component needs to overrides this for view to have access to the method in the package
@@ -164,7 +166,7 @@ public abstract class BasePaymentComponent<
     @Nullable
     @Override
     public OutputDataT getOutputData() {
-        return mOutputLiveData.getValue();
+        return mOutputData;
     }
 
     /**
@@ -193,12 +195,15 @@ public abstract class BasePaymentComponent<
      */
     protected void notifyStateChanged(@NonNull OutputDataT outputData) {
         Logger.d(TAG, "notifyStateChanged with OutputData");
-        if (!outputData.equals(mOutputLiveData.getValue())) {
-            mOutputLiveData.setValue(outputData);
-            notifyStateChanged();
-        } else {
-            Logger.d(TAG, "state has not changed");
-        }
+        mOutputData = outputData;
+        ThreadManager.MAIN_HANDLER.post(() -> {
+            if (!mOutputData.equals(mOutputLiveData.getValue())) {
+                mOutputLiveData.setValue(mOutputData);
+                notifyStateChanged();
+            } else {
+                Logger.d(TAG, "state has not changed");
+            }
+        });
     }
 
     /**
@@ -206,9 +211,9 @@ public abstract class BasePaymentComponent<
      */
     protected void notifyStateChanged() {
         Logger.d(TAG, "notifyStateChanged");
-        ThreadManager.EXECUTOR.submit(() -> {
+        ThreadManager.MAIN_HANDLER.post(() -> {
             try {
-                mPaymentComponentStateLiveData.postValue(createComponentState());
+                mPaymentComponentStateLiveData.setValue(createComponentState());
             } catch (Exception e) {
                 Logger.e(TAG, "notifyStateChanged - error:" + e.getMessage());
                 notifyException(new ComponentException("Unexpected error", e));

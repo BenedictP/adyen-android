@@ -8,16 +8,11 @@
 [//]: # ( # Deprecated)
 [//]: # ( - Configurations public constructor are deprecated, please use each Configuration's builder to make a Configuration object)
 
-## Added
-- For cards, in `AddressConfiguration.PostalCode` mode, you can now specify if the postal code field required.
-- For BCMC, you can now specify if the card holder name field is required.
-- After the card brand is detected and the shopper enters the full card number in the card number input field, focus automatically moves to the next input field.
+## Fixed
+- On Android API versions 21 to 25, the `NoSuchMethodError` no longer occurs during the 3D Secure 2 challenge flow.
 
 ## Changed
-- Upgraded the 3D Secure 2 SDK version to v2.2.10.
-- For a card number to be valid, its minimum required length is now 12 digits. Previously, the minimum was 8 digits.
-- For cards, if you currently set the postal code input field in the AddressConfiguration as `.setAddressConfiguration(AddressConfiguration.PostalCode)`, you must update it to `.setAddressConfiguration(AddressConfiguration.PostalCode())`.
-
-## Fixed
-- Configuration changes no longer dismiss Drop-in. Previously, some configuration changes dismissed Drop-in.
-- Drop-in can now be initialized with only stored payment methods. Previously, no payment methods were shown if only stored payment methods were available.
+- Dependency versions:
+  | Name                                                                                                   | Version                       |
+  |--------------------------------------------------------------------------------------------------------|-------------------------------|
+  | [Adyen 3DS2](https://github.com/Adyen/adyen-3ds2-android/releases/tag/2.2.19)                          | **2.2.19**                    |

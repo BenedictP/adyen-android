@@ -45,6 +45,8 @@ import kotlinx.coroutines.launch
 private val TAG = LogUtil.getTag()
 
 private const val BIN_VALUE_LENGTH = 6
+private const val BIN_VALUE_EXTENDED_LENGTH = 8
+private const val EXTENDED_CARD_NUMBER_LENGTH = 16
 private const val LAST_FOUR_LENGTH = 4
 private const val SINGLE_CARD_LIST_SIZE = 1
 
@@ -227,7 +229,7 @@ class CardComponent private constructor(
             addressFormUIState,
             cardDelegate.getInstallmentOptions(
                 configuration.installmentConfiguration,
-                selectedOrFirstCardType?.cardType,
+                selectedOrFirstCardType?.cardBrand?.cardType,
                 isReliable
             ),
             countryOptions,
@@ -267,7 +269,12 @@ class CardComponent private constructor(
 
     private fun requestCountryList(cardDelegate: NewCardDelegate) {
         viewModelScope.launch {
-            val countries = cardDelegate.getCountryList()
+            val countries = try {
+                cardDelegate.getCountryList()
+            } catch (e: CheckoutException) {
+                notifyException(e)
+                emptyList()
+            }
             val countryOptions = AddressFormUtils.initializeCountryOptions(cardConfiguration.addressConfiguration, countries)
             countryOptions.firstOrNull { it.selected }?.let {
                 inputData.address.country = it.code
@@ -300,15 +307,14 @@ class CardComponent private constructor(
         Logger.d(TAG, "makeCvcUIState: $cvcPolicy")
         return when {
             cardDelegate.isCvcHidden() -> InputFieldUIState.HIDDEN
-            // we treat CvcPolicy.HIDDEN as OPTIONAL for now to avoid hiding and showing the cvc field while the user is typing the card number
-            cvcPolicy == Brand.FieldPolicy.OPTIONAL || cvcPolicy == Brand.FieldPolicy.HIDDEN -> InputFieldUIState.OPTIONAL
+            cvcPolicy?.isRequired() == false -> InputFieldUIState.OPTIONAL
             else -> InputFieldUIState.REQUIRED
         }
     }
 
     private fun makeExpiryDateUIState(expiryDatePolicy: Brand.FieldPolicy?): InputFieldUIState {
-        return when (expiryDatePolicy) {
-            Brand.FieldPolicy.OPTIONAL, Brand.FieldPolicy.HIDDEN -> InputFieldUIState.OPTIONAL
+        return when {
+            expiryDatePolicy?.isRequired() == false -> InputFieldUIState.OPTIONAL
             else -> InputFieldUIState.REQUIRED
         }
     }
@@ -337,9 +343,16 @@ class CardComponent private constructor(
 
         val cardNumber = stateOutputData.cardNumberState.value
 
-        val firstCardType = stateOutputData.detectedCardTypes.firstOrNull()?.cardType
+        val firstCardType = stateOutputData.detectedCardTypes.firstOrNull()?.cardBrand?.cardType
 
-        val binValue = cardNumber.take(BIN_VALUE_LENGTH)
+        val binValue = if (
+            stateOutputData.cardNumberState.validation.isValid() &&
+            cardNumber.length >= EXTENDED_CARD_NUMBER_LENGTH
+        ) {
+            cardNumber.take(BIN_VALUE_EXTENDED_LENGTH)
+        } else {
+            cardNumber.take(BIN_VALUE_LENGTH)
+        }
 
         val publicKey = publicKey
 
@@ -431,7 +444,7 @@ class CardComponent private constructor(
         }
 
         if (isDualBrandedFlow(stateOutputData)) {
-            cardPaymentMethod.brand = stateOutputData.detectedCardTypes.firstOrNull { it.isSelected }?.cardType?.txVariant
+            cardPaymentMethod.brand = stateOutputData.detectedCardTypes.firstOrNull { it.isSelected }?.cardBrand?.txVariant
         }
 
         cardPaymentMethod.fundingSource = cardDelegate.getFundingSource()
@@ -503,7 +516,7 @@ class CardComponent private constructor(
 
     fun isDualBrandedFlow(cardOutputData: CardOutputData): Boolean {
         val reliableDetectedCards = cardOutputData.detectedCardTypes.filter { it.isReliable }
-        return reliableDetectedCards.size > 1 && reliableDetectedCards.any { it.isSelected }
+        return reliableDetectedCards.size > 1
     }
 
     private fun isInstallmentsRequired(cardOutputData: CardOutputData): Boolean {

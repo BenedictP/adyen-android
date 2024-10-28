@@ -15,6 +15,7 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.adyen.checkout.card.data.CardBrand;
 import com.adyen.checkout.card.data.CardType;
 import com.adyen.checkout.components.base.AddressVisibility;
 import com.adyen.checkout.components.base.BaseConfigurationBuilder;
@@ -22,6 +23,7 @@ import com.adyen.checkout.components.base.Configuration;
 import com.adyen.checkout.core.api.Environment;
 import com.adyen.checkout.core.util.ParcelUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +43,7 @@ public class CardConfiguration extends Configuration {
     private final String mShopperReference;
     private final boolean mHolderNameRequired;
     private final List<CardType> mSupportedCardTypes;
+    private final List<CardBrand> mSupportedCardBrands;
     private final boolean mShowStorePaymentField;
     private final String mPayButtonCustomText;
     private final boolean mHideCvc;
@@ -71,6 +74,7 @@ public class CardConfiguration extends Configuration {
 
         mHolderNameRequired = builder.mBuilderHolderNameRequired;
         mSupportedCardTypes = builder.mBuilderSupportedCardTypes;
+        mSupportedCardBrands = builder.mBuilderSupportedCardBrands;
         mShopperReference = builder.mShopperReference;
         mShowStorePaymentField = builder.mBuilderShowStorePaymentField;
         mPayButtonCustomText = builder.mBuilderPayButtonCustomText;
@@ -88,6 +92,7 @@ public class CardConfiguration extends Configuration {
         mShopperReference = in.readString();
         mHolderNameRequired = ParcelUtils.readBoolean(in);
         mSupportedCardTypes = in.readArrayList(CardType.class.getClassLoader());
+        mSupportedCardBrands = in.readArrayList(CardBrand.class.getClassLoader());
         mShowStorePaymentField = ParcelUtils.readBoolean(in);
         mPayButtonCustomText = in.readString();
         mHideCvc = ParcelUtils.readBoolean(in);
@@ -105,6 +110,7 @@ public class CardConfiguration extends Configuration {
         dest.writeString(mShopperReference);
         ParcelUtils.writeBoolean(dest, mHolderNameRequired);
         dest.writeList(mSupportedCardTypes);
+        dest.writeList(mSupportedCardBrands);
         ParcelUtils.writeBoolean(dest, mShowStorePaymentField);
         dest.writeString(mPayButtonCustomText);
         ParcelUtils.writeBoolean(dest, mHideCvc);
@@ -124,6 +130,15 @@ public class CardConfiguration extends Configuration {
     @NonNull
     public List<CardType> getSupportedCardTypes() {
         return mSupportedCardTypes;
+    }
+
+    /**
+     * The list of {@link CardBrand} that this payment supports. Used to predict the card type of the
+     * @return The list of {@link CardBrand}.
+     */
+    @NonNull
+    public List<CardBrand> getSupportedCardBrands() {
+        return mSupportedCardBrands;
     }
 
     /**
@@ -198,6 +213,8 @@ public class CardConfiguration extends Configuration {
     public static final class Builder extends BaseConfigurationBuilder<CardConfiguration> {
 
         private List<CardType> mBuilderSupportedCardTypes = Collections.emptyList();
+
+        private List<CardBrand> mBuilderSupportedCardBrands = new ArrayList<>();
         private boolean mBuilderHolderNameRequired;
         private boolean mBuilderShowStorePaymentField = true;
         private String mBuilderPayButtonCustomText;
@@ -216,6 +233,7 @@ public class CardConfiguration extends Configuration {
         public Builder(@NonNull CardConfiguration cardConfiguration) {
             super(cardConfiguration);
             mBuilderSupportedCardTypes = cardConfiguration.getSupportedCardTypes();
+            mBuilderSupportedCardBrands = cardConfiguration.getSupportedCardBrands();
             mBuilderHolderNameRequired = cardConfiguration.isHolderNameRequired();
             mBuilderShowStorePaymentField = cardConfiguration.isStorePaymentFieldVisible();
             mBuilderPayButtonCustomText = cardConfiguration.getPayButtonCustomText();
@@ -275,6 +293,25 @@ public class CardConfiguration extends Configuration {
         @NonNull
         public Builder setSupportedCardTypes(@NonNull CardType... supportCardTypes) {
             mBuilderSupportedCardTypes = Arrays.asList(supportCardTypes);
+            final List<CardBrand> cardBrands = new ArrayList<>();
+            for (CardType cardType : mBuilderSupportedCardTypes) {
+                cardBrands.add(new CardBrand(cardType));
+            }
+            mBuilderSupportedCardBrands.clear();
+            mBuilderSupportedCardBrands.addAll(cardBrands);
+            return this;
+        }
+
+        /**
+         * Set the supported card types for this payment. Supported types will be shown as user inputs the card number.
+         * Use this method when adding supported card types that are not inside the {@link CardType} enum.
+         *
+         * @param supportCardBrands array of {@link CardBrand}
+         * @return {@link CardConfiguration.Builder}
+         */
+        @NonNull
+        public Builder setSupportedCardTypes(@NonNull CardBrand... supportCardBrands) {
+            mBuilderSupportedCardBrands = Arrays.asList(supportCardBrands);
             return this;
         }
 

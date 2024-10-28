@@ -10,6 +10,7 @@ package com.adyen.checkout.adyen3ds2
 
 import android.app.Application
 import android.os.Bundle
+import androidx.annotation.RestrictTo
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
@@ -22,7 +23,9 @@ import com.adyen.checkout.components.model.payments.response.Threeds2ChallengeAc
 import com.adyen.checkout.components.model.payments.response.Threeds2FingerprintAction
 import com.adyen.checkout.redirect.RedirectDelegate
 
-class Adyen3DS2ComponentProvider : ActionComponentProvider<Adyen3DS2Component, Adyen3DS2Configuration> {
+class Adyen3DS2ComponentProvider
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+constructor() : ActionComponentProvider<Adyen3DS2Component, Adyen3DS2Configuration> {
 
     override fun <T> get(
         owner: T,
