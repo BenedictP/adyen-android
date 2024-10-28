@@ -12,7 +12,7 @@ apply from: "${rootDir}/config/gradle/artifacts.gradle"
 
 final theGroupId = "com.adyen.checkout"
 final theArtifactId = project.mavenArtifactId
-final theVersion = "4.9.0-FORK-GYG-V1"
+final theVersion = "4.13.6-FORK-GYG-V1"
 
 final theName = project.mavenArtifactName
 final theDescription = project.mavenArtifactDescription
