@@ -67,7 +67,7 @@ class GiftCardComponentDialogFragment : BaseComponentDialogFragment() {
         }
     }
 
-    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>?) {
+    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>) {
         componentDialogViewModel.componentStateChanged(component.state, componentView.isConfirmationRequired)
     }
 

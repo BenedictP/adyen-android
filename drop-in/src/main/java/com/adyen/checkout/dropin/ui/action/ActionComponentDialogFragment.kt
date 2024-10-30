@@ -120,7 +120,7 @@ class ActionComponentDialogFragment : DropInBottomSheetDialogFragment(), Observe
         }
     }
 
-    override fun onChanged(actionComponentData: ActionComponentData?) {
+    override fun onChanged(actionComponentData: ActionComponentData) {
         Logger.d(TAG, "onChanged")
         if (actionComponentData != null) {
             protocol.requestDetailsCall(actionComponentData)

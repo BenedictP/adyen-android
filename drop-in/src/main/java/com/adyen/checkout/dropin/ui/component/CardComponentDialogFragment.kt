@@ -103,7 +103,7 @@ class CardComponentDialogFragment : BaseComponentDialogFragment() {
         binding.recyclerViewCardList.adapter = cardListAdapter
     }
 
-    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>?) {
+    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>) {
         val cardComponent = component as CardComponent
         val cardComponentState = paymentComponentState as? CardComponentState
         if (cardComponentState?.cardType != null && !cardComponent.isStoredPaymentMethod()) {

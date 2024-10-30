@@ -157,14 +157,14 @@ class Adyen3DS2Component(
         } catch (e: CheckoutException) {
             notifyException(e)
         } finally {
-            closeTransaction(getApplication())
+            closeTransaction(this.application)
         }
     }
 
     private fun onCancelled() {
         Logger.d(TAG, "challenge cancelled")
         notifyException(Cancelled3DS2Exception("Challenge cancelled."))
-        closeTransaction(getApplication())
+        closeTransaction(this.application)
     }
 
     private fun onTimeout(result: ChallengeResult.Timeout) {
@@ -175,7 +175,7 @@ class Adyen3DS2Component(
         } catch (e: CheckoutException) {
             notifyException(e)
         } finally {
-            closeTransaction(getApplication())
+            closeTransaction(this.application)
         }
     }
 
@@ -187,7 +187,7 @@ class Adyen3DS2Component(
         } catch (e: CheckoutException) {
             notifyException(e)
         } finally {
-            closeTransaction(getApplication())
+            closeTransaction(this.application)
         }
     }
 
@@ -239,7 +239,7 @@ class Adyen3DS2Component(
         }
         viewModelScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
             // This makes sure the 3DS2 SDK doesn't re-use any state from previous transactions
-            closeTransaction(getApplication())
+            closeTransaction(application)
             try {
                 Logger.d(TAG, "initialize 3DS2 SDK")
                 val result = ThreeDS2Service.INSTANCE.initialize(activity, configParameters, null, mUiCustomization)

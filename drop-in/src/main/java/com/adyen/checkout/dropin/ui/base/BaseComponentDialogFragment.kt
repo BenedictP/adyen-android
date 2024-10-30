@@ -80,7 +80,7 @@ abstract class BaseComponentDialogFragment : DropInBottomSheetDialogFragment(), 
 
     abstract override fun onViewCreated(view: View, savedInstanceState: Bundle?)
 
-    abstract override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>?)
+    abstract override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>)
 
     protected abstract fun setPaymentPendingInitialization(pending: Boolean)
 

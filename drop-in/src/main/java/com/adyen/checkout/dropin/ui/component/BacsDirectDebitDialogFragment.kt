@@ -83,7 +83,7 @@ class BacsDirectDebitDialogFragment : BaseComponentDialogFragment() {
         return dialog
     }
 
-    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>?) {
+    override fun onChanged(paymentComponentState: PaymentComponentState<in PaymentMethodDetails>) {
         val bacsDirectDebitComponent = component as BacsDirectDebitComponent
         val bacsDirectDebitComponentState = paymentComponentState as? BacsDirectDebitComponentState
 

@@ -136,7 +136,7 @@ class GooglePayComponentDialogFragment : DropInBottomSheetDialogFragment(), Obse
         return true
     }
 
-    override fun onChanged(state: GooglePayComponentState?) {
+    override fun onChanged(state: GooglePayComponentState) {
         if (state?.isValid == true) {
             protocol.requestPaymentsCall(state)
         }

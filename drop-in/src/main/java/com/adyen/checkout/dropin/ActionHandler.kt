@@ -36,7 +36,7 @@ class ActionHandler(
     private var loadedComponent: BaseActionComponent<*>? = null
     private var loadedAction: Action? = null
 
-    override fun onChanged(componentData: ActionComponentData?) {
+    override fun onChanged(componentData: ActionComponentData) {
         if (componentData != null) {
             callback.requestDetailsCall(componentData)
         }
