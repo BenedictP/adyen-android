@@ -16,9 +16,10 @@ jobs:
           distribution: temurin
           java-version: 11
       - name: Generate and submit dependency graph
-        uses: gradle/actions/dependency-submission@v4.1.0
+        uses: gradle/actions/dependency-submission@v3.5.0
         with:
           gradle-version: wrapper
           dependency-graph: generate-and-submit
+        env:
           # Include only relevant configurations
-          dependency-graph-include-configurations: '(implementation|api|compileClasspath|runtimeClasspath)'
+          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: '(implementation|api|compileClasspath|runtimeClasspath)'
